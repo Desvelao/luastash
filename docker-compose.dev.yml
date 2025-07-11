@@ -1,0 +1,10 @@
+services:
+  dev:
+    build: ./docker
+    image: pipeflow-dev # luastash-dev
+    container_name: luastash-dev
+    volumes:
+      - ./:/home/app
+      - ./docker/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+    working_dir: /home/app
+    entrypoint: ["sh", "/docker-entrypoint.sh"]
