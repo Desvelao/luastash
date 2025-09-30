@@ -1,0 +1,264 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>luastash - Process data in a Logstash-like pipeline (v0.1.0)</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>luastash</h1>
+
+
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Description">Description </a></li>
+<li><a href="#Features">Features </a></li>
+<li><a href="#Installation">Installation </a></li>
+<li><a href="#Phases">Phases </a></li>
+<li><a href="#Logger">Logger </a></li>
+<li><a href="#Run_environment">Run environment </a></li>
+<li><a href="#Run_tests">Run tests </a></li>
+<li><a href="#Format_code">Format code </a></li>
+</ul>
+
+
+<h2>Topics</h2>
+<ul class="">
+  <li><strong>README</strong></li>
+</ul>
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../index.html">luastash</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+
+<h1>luastash</h1>
+
+<p><a name="Description"></a></p>
+<h2>Description</h2>
+
+<p>This library provides a sequentional processor to transform data. This is inspired by the Logstash from Elasticsearch.</p>
+
+<p>The data process has 3 phases:</p>
+
+<ol>
+    <li>Inputs</li>
+    <li>Filters</li>
+    <li>Outputs</li>
+</ol>
+
+
+<p><a name="Features"></a></p>
+<h2>Features</h2>
+
+<ul>
+    <li>Retrieve the data from multiple inputs in a round-robin selection</li>
+    <li>Transform the data optionally using filters</li>
+    <li>Output the data in different ways such as console, files, send requests, etc...</li>
+    <li>Run conditional processors defining a condition in Lua language using the <code>data</code> and context (<code>ctx</code>) variables</li>
+    <li>Run on-failure pipeline in filters or outputs phases</li>
+    <li>Skip running processors</li>
+</ul>
+
+<p><a name="Installation"></a></p>
+<h2>Installation</h2>
+
+
+<pre>
+luarocks install luastash
+</pre>
+
+
+<p><a name="Phases"></a></p>
+<h2>Phases</h2>
+
+<h3>Input</h3>
+
+<p>Define the inputs to take the values to process.</p>
+
+<p>It allows to define multiple input sources and this emits a value in a round-robin of the inputs.</p>
+
+<p>If any input emits a nil value, then the processor will be considered as finished and this will be removed from the inputs list.
+If you want to "pass" to the following input, emit the <code>&quot;__INPUT_CONTINUE_SIGNAL__&quot;</code> value.</p>
+
+<h3>Filters</h3>
+
+<p>They are optionals and are used to transfom the data. It uses the under the hood the <a href="https://github.com/Desvelao/pipeflow">pipeflow</a> library.</p>
+
+<h3>Outputs</h3>
+
+<p>They define the output of the transformed data such as print the result, save to file, send request to external services, etc...</p>
+
+<p>It uses the under the hood the <a href="https://github.com/Desvelao/pipeflow">pipeflow</a> library.</p>
+
+<h1>Usage</h1>
+
+
+<pre>
+<span class="keyword">local</span> luastash = <span class="global">require</span>(<span class="string">"luastash"</span>)
+
+<span class="comment">-- Define the pipeline
+</span><span class="keyword">local</span> pipeline = {
+    inputs = {
+        {
+            <span class="global">type</span>=<span class="string">'generate-integers'</span>,
+            options={
+                values={<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>}
+            }
+        }
+    },
+    filters = {
+        {
+            <span class="global">type</span>=<span class="string">'increase'</span>,
+            options={
+                value=<span class="number">2</span>
+            }
+        },
+        {
+            <span class="comment">-- Run conditionally the processor
+</span>            [<span class="string">"if"</span>] = <span class="string">"data &gt; 4"</span>,
+            <span class="global">type</span>=<span class="string">'increase'</span>,
+            options={
+                value=<span class="number">4</span>
+            }
+        }
+        {
+            <span class="comment">-- The filters can appear multiple times in the pipeline, this allows with a definition in the fitler processor, this can be applied multiple times.
+</span>            <span class="global">type</span>=<span class="string">'increase'</span>,
+            options={
+                value=<span class="number">3</span>
+            }
+        }
+    },
+    outputs = {
+        {
+            <span class="global">type</span>=<span class="string">'output-console'</span>,
+            options={}
+        }
+    },
+}
+
+<span class="comment">-- Define processors
+</span><span class="keyword">local</span> proccesors = {
+    inputs = {
+        [<span class="string">'generate-integers'</span>] = <span class="keyword">function</span> (options)
+            <span class="keyword">local</span> index = <span class="number">1</span>
+            <span class="keyword">local</span> values = options.values
+            <span class="keyword">local</span> <span class="keyword">function</span> <span class="global">next</span>()
+                <span class="keyword">local</span> value = values[index]
+                index = index + <span class="number">1</span>
+                <span class="keyword">return</span> value
+            <span class="keyword">end</span>
+
+            <span class="keyword">return</span> <span class="global">next</span> <span class="comment">-- Return an iterator that is called and returns a value each time. When this returns nil, then the input will be removed of the input list.
+</span>        <span class="keyword">end</span>,
+        [<span class="string">'generate-integers-infinite-loop'</span>] = <span class="keyword">function</span> (options)
+            <span class="keyword">local</span> index = <span class="number">1</span>
+            <span class="keyword">local</span> values = options.values
+            <span class="keyword">local</span> <span class="keyword">function</span> <span class="global">next</span>()
+                <span class="keyword">local</span> value = values[index]
+                index = index + <span class="number">1</span>
+                <span class="keyword">if</span> value == <span class="keyword">nil</span> <span class="keyword">then</span>
+                    index = <span class="number">1</span> <span class="comment">-- Return to first item, in the following call this will return the first item
+</span>                    <span class="keyword">return</span> luastash.INPUT_CONTINUE_SIGNAL <span class="comment">-- No emit value, and the generator will not be removed.
+</span>                    <span class="comment">-- Both creates an infinite loop, so the generator never finished
+</span>                <span class="keyword">end</span>
+                <span class="keyword">return</span> value
+            <span class="keyword">end</span>
+
+            <span class="keyword">return</span> <span class="global">next</span> <span class="comment">-- Return an iterator that is called and returns a value each time. When this returns nil, then the input will be removed of the input list.
+</span>        <span class="keyword">end</span>
+    },
+    filters = {
+        increase = <span class="keyword">function</span> <span class="function-name">increase_integer</span>(options, data)
+            <span class="keyword">return</span> data + options.value <span class="comment">-- Ensure to return the data despite this is not modified
+</span>        <span class="keyword">end</span>
+    },
+    outputs = {
+        [<span class="string">'output-console'</span>] = <span class="keyword">function</span>(options, data)
+            <span class="global">print</span>(data)
+            <span class="keyword">return</span> data <span class="comment">-- Ensure to return the data
+</span>        <span class="keyword">end</span>
+    }
+}
+
+<span class="function-name">luastash</span>(
+    pipeline,
+    processors,
+    <span class="comment">-- optionally the logger can be passed or this will use the built-in logger instead
+</span>)
+
+<span class="function-name">luastash</span>(
+    <span class="string">'pipeline.json'</span>, <span class="comment">-- the pipeline can be defined in a JSON file
+</span>    processors,
+)
+</pre>
+
+
+<p><a name="Logger"></a></p>
+<h2>Logger</h2>
+
+<p>The run pipeline and pipeflow manager can use a logger that has the following methods:</p>
+
+<ul>
+    <li>debug, info, warn, error: define the level log methods</li>
+    <li>get_logger: create a child logger used in the pipeline run</li>
+</ul>
+
+<h1>Development</h1>
+
+<p><a name="Run_environment"></a></p>
+<h2>Run environment</h2>
+
+<pre><code> docker compose -f docker-compose.dev.yml up -d
+ docker compose -f docker-compose.dev.yml exec dev sh
+</code></pre>
+
+
+<p><a name="Run_tests"></a></p>
+<h2>Run tests</h2>
+
+<pre><code> /usr/local/bin/busted
+</code></pre>
+
+
+<p><a name="Format_code"></a></p>
+<h2>Format code</h2>
+
+<pre><code> /usr/local/bin/stylua luastash.lua
+</code></pre>
+
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
+<i style="float:right;">Last updated 2025-09-30 16:48:18 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
