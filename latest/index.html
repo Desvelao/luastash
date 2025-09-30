@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>luastash - Process data in a Logstash-like pipeline (v0.1.0)</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>luastash</h1>
+
+
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><strong>luastash</strong></li>
+</ul>
+<h2>Topics</h2>
+<ul class="">
+  <li><a href="topics/README.md.html">README</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>luastash</code></h1>
+<p>LuaStash Module
+ This module provides functionality to process data through a pipeline of generators and outputs.</p>
+<p> It includes logging and error handling mechanisms.</p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#__call">__call (config, processors, ctx, utils)</a></td>
+	<td class="summary">Runs the stash pipeline.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#create_logger">create_logger (options)</a></td>
+	<td class="summary">Creates a new logger instance.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#StashProcessors">StashProcessors</a></td>
+	<td class="summary">Define the inputs, filters and outputs processors.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Stash">Stash</a></td>
+	<td class="summary">A metatable that provides callable and indexable behavior.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "__call"></a>
+    <strong>__call (config, processors, ctx, utils)</strong>
+    </dt>
+    <dd>
+    Runs the stash pipeline.
+ This function processes data through a series of generators, filters and outputs.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">config</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+         Pipeline configuration or file path
+        </li>
+        <li><span class="parameter">processors</span>
+            <span class="types"><a class="type" href="index.html#StashProcessors">StashProcessors</a></span>
+         Inputs, filters and outputs processors
+        </li>
+        <li><span class="parameter">ctx</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+         Context object passed to processors
+        </li>
+        <li><span class="parameter">utils</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+         Utility functions and logger
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        nil
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> luastash = <span class="global">require</span>(<span class="string">"luastash"</span>)
+<span class="function-name">luastash</span>(config, processors, ctx, utils)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "create_logger"></a>
+    <strong>create_logger (options)</strong>
+    </dt>
+    <dd>
+    Creates a new logger instance.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">options</span>
+         A table of options to configure the logger.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        A new <code>Logger</code> instance.
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> luastash = <span class="global">require</span>(<span class="string">"luastash"</span>)
+<span class="keyword">local</span> logger = luastash.<span class="function-name">create_logger</span>({name=<span class="string">"mylogger"</span>, level=<span class="string">"debug"</span>})</pre>
+    </ul>
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "StashProcessors"></a>
+    <strong>StashProcessors</strong>
+    </dt>
+    <dd>
+    Define the inputs, filters and outputs processors.
+ This table should contain functions for each processor type used in the stash pipeline.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">inputs</span>
+         Defines input processor functions.
+        </li>
+        <li><span class="parameter">filters</span>
+         Defines filter processor functions.
+        </li>
+        <li><span class="parameter">outputs</span>
+         Defines output processor functions.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Stash"></a>
+    <strong>Stash</strong>
+    </dt>
+    <dd>
+    A metatable that provides callable and indexable behavior.
+ This table allows calling <code>run_stash</code> directly and provides a method to create a logger.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">__call</span>
+         Calls the <code>run_stash</code> function with the provided arguments.
+        </li>
+        <li><span class="parameter">__index</span>
+         Contains utility methods, such as <a href="index.html#create_logger">create_logger</a> and <code>INPUT_CONTINUE_SIGNAL</code>.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
+<i style="float:right;">Last updated 2025-09-30 16:48:18 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
