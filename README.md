@@ -2,44 +2,46 @@
 
 ## Description
 
-This library provides a sequentional processor to transform data. This is inspired by the Logstash from Elasticsearch.
+This library provides a sequential processor to transform data. It is inspired by Logstash, a data processing pipeline tool from Elasticsearch.
 
-The data process has 3 phases:
+The data processing pipeline consists of three phases:
 
-1. Inputs
-2. Filters
-3. Outputs
+1. **Inputs**: Retrieve data from various sources.
+2. **Filters**: Transform or filter the data.
+3. **Outputs**: Send the processed data to different destinations.
 
 
 ## Features
 
-- Retrieve the data from multiple inputs in a round-robin selection
-- Transform the data optionally using filters
-- Output the data in different ways such as console, files, send requests, etc...
-- Run conditional processors defining a condition in Lua language using the `data` and context (`ctx`) variables
-- Run on-failure pipeline in filters or outputs phases
-- Skip running processors
+- Retrieve data from multiple inputs using a round-robin selection.
+- Optionally transform the data using filters.
+- Output data in various ways, such as to the console, files, or by sending requests.
+- Run conditional processors by defining conditions in Lua using the `data` and context (`ctx`) variables.
+- Execute on-failure pipelines during the filters or outputs phases.
+- Skip running specific processors when needed.
 
 ## Installation
 
-```console
+```bash
 luarocks install luastash
 ```
 
 ## Phases
 
-### Input
+### Inputs
 
-Define the inputs to take the values to process.
+Define the inputs to retrieve the values to process.
 
-It allows to define multiple input sources and this emits a value in a round-robin of the inputs.
+You can define multiple input sources, and the processor will emit values in a round-robin fashion from the inputs.
 
-If any input emits a nil value, then the processor will be considered as finished and this will be removed from the inputs list.
-If you want to "pass" to the following input, emit the `"__INPUT_CONTINUE_SIGNAL__"` value.
+If any input emits a nil value, the processor will consider it finished and remove it from the inputs list.
+To skip to the next input, emit the "__INPUT_CONTINUE_SIGNAL__" value.
 
 ### Filters
 
-They are optionals and are used to transfom the data. It uses the under the hood the [pipeflow](https://github.com/Desvelao/pipeflow) library.
+They are optionals and are used to transfom the data before sending it to the outputs.
+
+It uses the under the hood the [pipeflow](https://github.com/Desvelao/pipeflow) library.
 
 ### Outputs
 
