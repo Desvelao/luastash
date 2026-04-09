@@ -1,7 +1,7 @@
 services:
   dev:
     build: ./docker
-    image: pipeflow-dev # luastash-dev
+    image: luastash-dev # luastash-dev
     container_name: luastash-dev
     volumes:
       - ./:/home/app

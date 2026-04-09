@@ -24,7 +24,7 @@ local function input_integers_continue(options)
 		if value == nil then
 			continue_generator = continue_generator + 1
 			if options.continues > continue_generator then
-				return '__INPUT_CONTINUE_SIGNAL__'
+				return "__INPUT_CONTINUE_SIGNAL__"
 			end
 		end
 		return value
@@ -44,139 +44,182 @@ end
 describe("Run stash", function()
 	it("Basic stash", function()
 		local t = {
-			print = _print
+			print = _print,
 		}
 
-		stub(t, 'print')
-		luastash(
-			{
-				inputs = {
-					{
-						type='input-test',
-						options={
-							values={1,2,3,4,5}
-						}
-					}
-				},
-				-- filters = {
-
-				-- },
-				outputs = {
-					{
-						type='output-test',
-						options={}
-					}
+		stub(t, "print")
+		luastash({
+			inputs = {
+				{
+					type = "input-test",
+					options = {
+						values = { 1, 2, 3, 4, 5 },
+					},
 				},
 			},
-			{
-				inputs = {
-					['input-test'] = input_integers
-				},
-				-- filters = {
+			-- filters = {
 
-				-- },
-				outputs = {
-					['output-test'] = function(options, data)
-						t.print(data)
-						assert.stub(t.print).was.called_with(data)
-					end
-				}
-			}
-		)
-		
+			-- },
+			outputs = {
+				{
+					type = "output-test",
+					options = {},
+				},
+			},
+		}, {
+			inputs = {
+				["input-test"] = input_integers,
+			},
+			-- filters = {
+
+			-- },
+			outputs = {
+				["output-test"] = function(options, data)
+					t.print(data)
+					assert.stub(t.print).was.called_with(data)
+				end,
+			},
+		})
 	end)
 
 	it("Filters stash", function()
 		local t = {
-			print = _print
+			print = _print,
 		}
 
-		stub(t, 'print')
-		luastash(
-			{
-				inputs = {
-					{
-						type='input-test',
-						options={
-							values={1,2,3,4,5}
-						}
-					}
-				},
-				filters = {
-					{
-						type='increase',
-						options={
-							value=2
-						}
-					}
-				},
-				outputs = {
-					{
-						type='output-test',
-						options={}
-					}
+		stub(t, "print")
+		luastash({
+			inputs = {
+				{
+					type = "input-test",
+					options = {
+						values = { 1, 2, 3, 4, 5 },
+					},
 				},
 			},
-			{
-				inputs = {
-					['input-test'] = input_integers
+			filters = {
+				{
+					type = "increase",
+					options = {
+						value = 2,
+					},
 				},
-				filters = {
-					increase = increase_integer
+			},
+			outputs = {
+				{
+					type = "output-test",
+					options = {},
 				},
-				outputs = {
-					['output-test'] = function(options, data)
-						t.print(data)
-						assert.stub(t.print).was.called_with(data)
-					end
-				}
-			}
-		)
-		
+			},
+		}, {
+			inputs = {
+				["input-test"] = input_integers,
+			},
+			filters = {
+				increase = increase_integer,
+			},
+			outputs = {
+				["output-test"] = function(options, data)
+					t.print(data)
+					assert.stub(t.print).was.called_with(data)
+				end,
+			},
+		})
 	end)
 
 	it("Skip input stash", function()
 		local t = {
-			print = _print
+			print = _print,
 		}
 
-		stub(t, 'print')
-		luastash(
-			{
-				inputs = {
-					{
-						type='input-test',
-						options={
-							values={1,2,3,4,5},
-							continues=4
-						}
-					}
-				},
-				-- filters = {
-
-				-- },
-				outputs = {
-					{
-						type='output-test',
-						options={}
-					}
+		stub(t, "print")
+		luastash({
+			inputs = {
+				{
+					type = "input-test",
+					options = {
+						values = { 1, 2, 3, 4, 5 },
+						continues = 4,
+					},
 				},
 			},
-			{
-				inputs = {
-					['input-test'] = input_integers_continue
-				},
-				-- filters = {
+			-- filters = {
 
-				-- },
-				outputs = {
-					['output-test'] = function(options, data)
-						t.print(data)
-						assert.stub(t.print).was.called_with(data)
-					end
-				}
-			}
-		)
-		
+			-- },
+			outputs = {
+				{
+					type = "output-test",
+					options = {},
+				},
+			},
+		}, {
+			inputs = {
+				["input-test"] = input_integers_continue,
+			},
+			-- filters = {
+
+			-- },
+			outputs = {
+				["output-test"] = function(options, data)
+					t.print(data)
+					assert.stub(t.print).was.called_with(data)
+				end,
+			},
+		})
+	end)
+
+	it("Run multiple inputs stash", function()
+		local t = {
+			print = _print,
+		}
+
+		stub(t, "print")
+		luastash({
+			inputs = {
+				{
+					type = "input-test",
+					options = {
+						values = { 1, 2, 3, 4, 5 },
+						continues = 4,
+					},
+				},
+				{
+					type = "input-test",
+					options = {
+						values = { 2, 3, 4, 5, 6 },
+						continues = 3,
+					},
+				},
+				{
+					type = "input-test",
+					options = {
+						values = { 10, 20, 30, 40 },
+						continues = 3,
+					},
+				},
+			},
+			-- filters = {
+
+			-- },
+			outputs = {
+				{
+					type = "output-test",
+					options = {},
+				},
+			},
+		}, {
+			inputs = {
+				["input-test"] = input_integers_continue,
+			},
+			-- filters = {
+
+			-- },
+			outputs = {
+				["output-test"] = function(options, data)
+					t.print(data)
+					assert.stub(t.print).was.called_with(data)
+				end,
+			},
+		})
 	end)
 end)

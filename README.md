@@ -177,5 +177,5 @@ docker compose -f docker-compose.dev.yml exec dev sh
 ## Format code
 
 ```
-/usr/local/bin/stylua luastash.lua
+/usr/local/bin/stylua luastash.lua spec/luastash.spec.lua
 ```

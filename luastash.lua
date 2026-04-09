@@ -8,78 +8,80 @@ local dkjson = require("dkjson")
 
 -- Logger
 local logger_map_level_name = {
-    debug=0,
-    info=1,
-    warn=2,
-    error=3
+	debug = 0,
+	info = 1,
+	warn = 2,
+	error = 3,
 }
 
 local Logger = {}
 
 function Logger:new(options)
-    local instance = {
-        level = "info",
-        name = options and options.name or "",
-        enabled = options and options.enabled or true
-    }
+	local instance = {
+		level = "info",
+		name = options and options.name or "",
+		enabled = options and options.enabled or true,
+	}
 
-    setmetatable(instance, {__index = Logger})
+	setmetatable(instance, { __index = Logger })
 
-    if options and options.level then
-        instance:set_level(options.level)
-    end
+	if options and options.level then
+		instance:set_level(options.level)
+	end
 
-    local function createLoggerLevel(label)
-        return function(text, ...)
-            if instance.enabled and logger_map_level_name[label] >= logger_map_level_name[instance.level] then
-                local arg = {...}
-                print(string.format(
-                    "%s %s[%s]: %s",
-                    os.date("!%c"),
-                    instance.name and string.format("{%s} ", instance.name) or "",
-                    label,
-                    #arg > 0 and string.format(text, ...) or text
-                ))
-            end
-        end
-    end
+	local function createLoggerLevel(label)
+		return function(text, ...)
+			if instance.enabled and logger_map_level_name[label] >= logger_map_level_name[instance.level] then
+				local arg = { ... }
+				print(
+					string.format(
+						"%s %s[%s]: %s",
+						os.date("!%c"),
+						instance.name and string.format("{%s} ", instance.name) or "",
+						label,
+						#arg > 0 and string.format(text, ...) or text
+					)
+				)
+			end
+		end
+	end
 
-    for _, label in ipairs({'debug', 'info', 'warn', 'error'}) do
-        instance[label] = createLoggerLevel(label)
-    end
+	for _, label in ipairs({ "debug", "info", "warn", "error" }) do
+		instance[label] = createLoggerLevel(label)
+	end
 
-    return instance
+	return instance
 end
 
 function Logger:set_level(level)
-    if logger_map_level_name[self.level] == nil then
-        error(string.format("Level is not allowed: %s", tostring(level)))
-    end
-    self.level = level
+	if logger_map_level_name[self.level] == nil then
+		error(string.format("Level is not allowed: %s", tostring(level)))
+	end
+	self.level = level
 end
 
 function Logger:disable(level)
-    self.enabled = false
+	self.enabled = false
 end
 
 function Logger:enable(level)
-    self.enabled = false
+	self.enabled = false
 end
 
 function Logger:get_logger(options)
-    local new_options = {
-        level = (options and options.level ~= nil and options.level) or self.level,
-        enabled = options and options.enabled or self.enabled
-    }
+	local new_options = {
+		level = (options and options.level ~= nil and options.level) or self.level,
+		enabled = options and options.enabled or self.enabled,
+	}
 
-    if options and options.name then
-        new_options.name = string.format("%s:%s", self.name, options.name)
-    end
+	if options and options.name then
+		new_options.name = string.format("%s:%s", self.name, options.name)
+	end
 
-    return Logger:new(new_options)
+	return Logger:new(new_options)
 end
 
-local LoggerMain = Logger:new({name='luastash', level = 'debug'})
+local LoggerMain = Logger:new({ name = "luastash", level = "debug" })
 
 -- Core
 
@@ -126,7 +128,7 @@ local function run_stash(config, processors, ctx, utils)
 	logger.debug("Running stash")
 	local _config = config
 	if type(_config) == "string" then
-		local _configfile = _config;
+		local _configfile = _config
 		logger.debug("Reading file: %s", _configfile)
 		_config = get_config_from_file(_config)
 		logger.debug("Readed file: %s, content: %s", _configfile, dkjson.encode(_config))
@@ -145,56 +147,85 @@ local function run_stash(config, processors, ctx, utils)
 
 	local generator_index = 1
 	while #generators > 0 do
-		local generator = generators[generator_index]
-		local logger_generator = logger:get_logger({
-			name = string.format("input[type=%s]", generator.type) .. (generator.tag and string.format("[tag=%s]", step.tag) or "")
-		})
+		local success, err = pcall(function()
+			local generator = generators[generator_index]
+			local logger_generator = logger:get_logger({
+				name = string.format("input[type=%s]", generator.type)
+					.. (generator.tag and string.format("[tag=%s]", step.tag) or ""),
+			})
 
-		logger_generator.debug("Calling generator [%s] of [%s]", generator_index, #generators)
-		logger_generator.debug("Getting next value from generator [%s] of [%s]", generator_index, #generators)
-		local data = generator.next(generator.options, ctx, utils)
-		logger_generator.debug(
-			"Next value from generator [%s] of [%s]: %s",
-			generator_index,
-			#generators,
-			tostring(data)
-		)
+			logger_generator.debug("Calling generator [%s] of [%s]", generator_index, #generators)
+			logger_generator.debug("Getting next value from generator [%s] of [%s]", generator_index, #generators)
+			local data = generator.next(generator.options, ctx, utils)
+			logger_generator.debug(
+				"Next value from generator [%s] of [%s]: %s",
+				generator_index,
+				#generators,
+				tostring(data)
+			)
 
-		if data == nil then
-			logger_generator.debug("Removing generator [%s] of [%s] due to returned nil", generator_index, #generators)
-			table.remove(generators, generator_index)
-			logger_generator.debug("Generator [%s] was removed. Remaining generators [%s]", generator_index, #generators)
-		else
-			if data == INPUT_CONTINUE_SIGNAL then
-				-- Do nothing keeping the input generator
-                logger_generator.debug("Skip input due to continue signal")
+			if data == nil then
+				logger_generator.debug(
+					"Removing generator [%s] of [%s] due to returned nil",
+					generator_index,
+					#generators
+				)
+				table.remove(generators, generator_index)
+				logger_generator.debug(
+					"Generator [%s] was removed. Remaining generators [%s]",
+					generator_index,
+					#generators
+				)
 			else
-				logger_generator.debug("Processing data")
-				if _config.filters then
-					if processors.filters == nil then
-						error("Processors filters are not defined")
-					end
-					logger_generator.debug("Processing filters")
-					data = pipeflow({ name = "filters", processors = _config.filters }, processors.filters, data, ctx, {logger=logger_generator})
-					logger_generator.debug("Processed filters")
-				end
-			
-				-- Avoid run the outputs pipeline if the transformed data is nil
-				if data ~= nil then
-					logger_generator.debug("Processing outputs")
-					data = pipeflow({ name = "outputs", processors = _config.outputs }, processors.outputs, data, ctx, {logger=logger_generator})
-					logger_generator.debug("Processed outputs")
+				if data == INPUT_CONTINUE_SIGNAL then
+					-- Do nothing keeping the input generator
+					logger_generator.debug("Skip input due to continue signal")
 				else
-					logger_generator.debug("Skipped outputs")
-				end
+					logger_generator.debug("Processing data")
+					if _config.filters then
+						if processors.filters == nil then
+							error("Processors filters are not defined")
+						end
+						logger_generator.debug("Processing filters")
+						data = pipeflow(
+							{ name = "filters", processors = _config.filters },
+							processors.filters,
+							data,
+							ctx,
+							{ logger = logger_generator }
+						)
+						logger_generator.debug("Processed filters")
+					end
 
-                logger_generator.debug("Data was processed")
+					-- Avoid run the outputs pipeline if the transformed data is nil
+					if data ~= nil then
+						logger_generator.debug("Processing outputs")
+						data = pipeflow(
+							{ name = "outputs", processors = _config.outputs },
+							processors.outputs,
+							data,
+							ctx,
+							{ logger = logger_generator }
+						)
+						logger_generator.debug("Processed outputs")
+					else
+						logger_generator.debug("Skipped outputs")
+					end
+					logger_generator.debug("Data was processed")
+				end
 			end
-            logger.debug("Pass to following generator")
-			generator_index = generator_index + 1
-			if generator_index > #generators then
-				generator_index = 1
-			end
+		end)
+
+		if not success then
+			logger.error("Error processing: %s", err)
+		end
+
+		logger.debug("Pass to following generator")
+		-- FIXME: if the previous to the last generator was removed, it will be reset from begging instead of run with the last generator
+		generator_index = generator_index + 1
+		if generator_index > #generators then
+			logger.debug("Reset to the first generator")
+			generator_index = 1
 		end
 	end
 
@@ -241,6 +272,7 @@ return setmetatable({}, {
 		create_logger = function(options)
 			return Logger:new(options)
 		end,
-		INPUT_CONTINUE_SIGNAL = INPUT_CONTINUE_SIGNAL
-	}
+		INPUT_CONTINUE_SIGNAL = INPUT_CONTINUE_SIGNAL,
+		version = "v0.1.1",
+	},
 })
