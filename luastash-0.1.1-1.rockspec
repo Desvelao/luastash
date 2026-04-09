@@ -1,14 +1,12 @@
 package = "luastash"
-version = "0.1.0-1"
+version = "0.1.1-1"
 source = {
    url = "git+https://github.com/Desvelao/luastash",
-   tag = "v0.1.0"
+   tag = "v0.1.1"
 }
 description = {
    summary = 'Transform data through a Logstash-like pipeline',
-   detailed = [[
-
-]],
+   detailed = [[]],
    homepage = "https://github.com/Desvelao/luastash",
    license = "MIT"
 }
