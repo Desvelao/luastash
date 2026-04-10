@@ -65,7 +65,7 @@ function Logger:disable(level)
 end
 
 function Logger:enable(level)
-	self.enabled = false
+	self.enabled = true
 end
 
 function Logger:get_logger(options)
@@ -82,6 +82,94 @@ function Logger:get_logger(options)
 end
 
 local LoggerMain = Logger:new({ name = "luastash", level = "debug" })
+
+-- Event
+local Event = {}
+Event.__index = Event
+
+-- Utility: split "[a][b][c]" into {"a","b","c"}
+local function parse_path(path)
+    local parts = {}
+    for key in path:gmatch("%[([^%]]+)%]") do
+        parts[#parts + 1] = key
+    end
+    return parts
+end
+
+-- Utility: deep clone
+local function deep_copy(tbl)
+    if type(tbl) ~= "table" then return tbl end
+    local copy = {}
+    for k, v in pairs(tbl) do
+        copy[k] = deep_copy(v)
+    end
+    return copy
+end
+
+-- Constructor
+function Event:new(fields)
+    local obj = {
+        data = fields or {},
+        metadata = {},
+    }
+
+    -- Logstash defaults
+    obj.metadata["@timestamp"] = obj.data["@timestamp"] or os.date("!%Y-%m-%dT%H:%M:%SZ")
+    obj.metadata["@version"]   = obj.data["@version"]   or "1"
+
+    return setmetatable(obj, self)
+end
+
+-- Get field using Logstash-style path: "[foo][bar]"
+function Event:get(path)
+    local parts = parse_path(path)
+    local ref = self.data
+
+    for _, key in ipairs(parts) do
+        if type(ref) ~= "table" then return nil end
+        ref = ref[key]
+        if ref == nil then return nil end
+    end
+
+    return ref
+end
+
+-- Set field using "[foo][bar]" syntax
+function Event:set(path, value)
+    local parts = parse_path(path)
+    local ref = self.data
+
+    for i = 1, #parts - 1 do
+        local key = parts[i]
+        if type(ref[key]) ~= "table" then
+            ref[key] = {}
+        end
+        ref = ref[key]
+    end
+
+    ref[parts[#parts]] = value
+end
+
+-- Metadata access (Logstash keeps metadata separate)
+function Event:set_metadata(key, value)
+    self.metadata[key] = value
+end
+
+function Event:get_metadata(key)
+    return self.metadata[key]
+end
+
+-- Clone event
+function Event:clone()
+    local copy = Event:new(deep_copy(self.data))
+    copy.metadata = deep_copy(self.metadata)
+    return copy
+end
+
+-- Serialize to JSON
+function Event:to_json()
+    return dkjson.encode(self.data)
+end
 
 -- Core
 
@@ -120,8 +208,6 @@ local function setup_inputs(config_inputs, inputs, ctx, utils)
 	return generators
 end
 
-local INPUT_CONTINUE_SIGNAL = "__INPUT_CONTINUE_SIGNAL__"
-
 local function run_stash(config, processors, ctx, utils)
 	local logger = utils and utils.logger or LoggerMain
 
@@ -140,6 +226,10 @@ local function run_stash(config, processors, ctx, utils)
 		error(message)
 	end
 
+	local pipeflow_options = {
+		eval_accessor_data = 'event'
+	}
+
 	logger.debug("Setup input generators")
 	local generators = setup_inputs(_config.inputs, processors.inputs, ctx, utils)
 
@@ -156,15 +246,15 @@ local function run_stash(config, processors, ctx, utils)
 
 			logger_generator.debug("Calling generator [%s] of [%s]", generator_index, #generators)
 			logger_generator.debug("Getting next value from generator [%s] of [%s]", generator_index, #generators)
-			local data = generator.next(generator.options, ctx, utils)
+			local gen_continue, message = generator.next(generator.options, ctx, utils)
 			logger_generator.debug(
 				"Next value from generator [%s] of [%s]: %s",
 				generator_index,
 				#generators,
-				tostring(data)
+				tostring(message)
 			)
 
-			if data == nil then
+			if not gen_continue then
 				logger_generator.debug(
 					"Removing generator [%s] of [%s] due to returned nil",
 					generator_index,
@@ -177,20 +267,25 @@ local function run_stash(config, processors, ctx, utils)
 					#generators
 				)
 			else
-				if data == INPUT_CONTINUE_SIGNAL then
+				if message == nil then
 					-- Do nothing keeping the input generator
-					logger_generator.debug("Skip input due to continue signal")
+					logger_generator.debug("Skip input due to nil value")
 				else
+					local event = Event:new(message)
+					event:set_metadata('source', generator.type)
+					if generator.tag then
+						event:set_metadata('source_tag', generator.type)
+					end
 					logger_generator.debug("Processing data")
 					if _config.filters then
 						if processors.filters == nil then
 							error("Processors filters are not defined")
 						end
 						logger_generator.debug("Processing filters")
-						data = pipeflow(
-							{ name = "filters", processors = _config.filters },
+						event = pipeflow(
+							{ name = "filters", processors = _config.filters, options = pipeflow_options },
 							processors.filters,
-							data,
+							event,
 							ctx,
 							{ logger = logger_generator }
 						)
@@ -198,12 +293,12 @@ local function run_stash(config, processors, ctx, utils)
 					end
 
 					-- Avoid run the outputs pipeline if the transformed data is nil
-					if data ~= nil then
+					if event ~= nil then
 						logger_generator.debug("Processing outputs")
-						data = pipeflow(
-							{ name = "outputs", processors = _config.outputs },
+						pipeflow(
+							{ name = "outputs", processors = _config.outputs, options = pipeflow_options },
 							processors.outputs,
-							data,
+							event,
 							ctx,
 							{ logger = logger_generator }
 						)
@@ -243,7 +338,7 @@ end
 -- This table allows calling `run_stash` directly and provides a method to create a logger.
 -- @table Stash
 -- @field __call Calls the `run_stash` function with the provided arguments.
--- @field __index Contains utility methods, such as `create_logger` and `INPUT_CONTINUE_SIGNAL`.
+-- @field __index Contains utility methods, such as `create_logger` and `version`.
 
 --- Runs the stash pipeline.
 -- This function processes data through a series of generators, filters and outputs.
@@ -272,7 +367,7 @@ return setmetatable({}, {
 		create_logger = function(options)
 			return Logger:new(options)
 		end,
-		INPUT_CONTINUE_SIGNAL = INPUT_CONTINUE_SIGNAL,
-		version = "v0.1.1",
+		Event = Event,
+		version = "v0.2.0",
 	},
 })

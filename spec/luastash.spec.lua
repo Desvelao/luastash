@@ -1,16 +1,15 @@
 local luastash = require("luastash")
 
-local function input_integers(options)
+local function input_integers_co(options)
 	local index = 1
 	local values = options.values
-	local function test()
-		local value = values[index]
-		index = index + 1
-
-		return value
-	end
-
-	return test
+	return coroutine.wrap(function(t)
+		while true do
+			local value = values[index] 
+			coroutine.yield(value ~= nil, value)
+			index = index + 1
+		end
+	end)
 end
 
 local function input_integers_continue(options)
@@ -24,17 +23,18 @@ local function input_integers_continue(options)
 		if value == nil then
 			continue_generator = continue_generator + 1
 			if options.continues > continue_generator then
-				return "__INPUT_CONTINUE_SIGNAL__"
+				return true, nil -- allow the input run, but the data process will be skipped
 			end
 		end
-		return value
+		return value ~= nil, value
 	end
 
 	return test
 end
 
-local function increase_integer(options, data)
-	return data + options.value
+local function increase_integer(options, event)
+	event.data = event.data + options.value
+	return event
 end
 
 local function _print(options)
@@ -57,9 +57,6 @@ describe("Run stash", function()
 					},
 				},
 			},
-			-- filters = {
-
-			-- },
 			outputs = {
 				{
 					type = "output-test",
@@ -68,15 +65,12 @@ describe("Run stash", function()
 			},
 		}, {
 			inputs = {
-				["input-test"] = input_integers,
+				["input-test"] = input_integers_co,
 			},
-			-- filters = {
-
-			-- },
 			outputs = {
-				["output-test"] = function(options, data)
-					t.print(data)
-					assert.stub(t.print).was.called_with(data)
+				["output-test"] = function(options, event)
+					t.print(event.data)
+					assert.stub(t.print).was.called_with(event.data)
 				end,
 			},
 		})
@@ -113,15 +107,15 @@ describe("Run stash", function()
 			},
 		}, {
 			inputs = {
-				["input-test"] = input_integers,
+				["input-test"] = input_integers_co,
 			},
 			filters = {
 				increase = increase_integer,
 			},
 			outputs = {
-				["output-test"] = function(options, data)
-					t.print(data)
-					assert.stub(t.print).was.called_with(data)
+				["output-test"] = function(options, event)
+					t.print(event.data)
+					assert.stub(t.print).was.called_with(event.data)
 				end,
 			},
 		})
@@ -143,9 +137,6 @@ describe("Run stash", function()
 					},
 				},
 			},
-			-- filters = {
-
-			-- },
 			outputs = {
 				{
 					type = "output-test",
@@ -156,13 +147,10 @@ describe("Run stash", function()
 			inputs = {
 				["input-test"] = input_integers_continue,
 			},
-			-- filters = {
-
-			-- },
 			outputs = {
-				["output-test"] = function(options, data)
-					t.print(data)
-					assert.stub(t.print).was.called_with(data)
+				["output-test"] = function(options, event)
+					t.print(event.data)
+					assert.stub(t.print).was.called_with(event.data)
 				end,
 			},
 		})
@@ -198,9 +186,6 @@ describe("Run stash", function()
 					},
 				},
 			},
-			-- filters = {
-
-			-- },
 			outputs = {
 				{
 					type = "output-test",
@@ -211,13 +196,10 @@ describe("Run stash", function()
 			inputs = {
 				["input-test"] = input_integers_continue,
 			},
-			-- filters = {
-
-			-- },
 			outputs = {
-				["output-test"] = function(options, data)
-					t.print(data)
-					assert.stub(t.print).was.called_with(data)
+				["output-test"] = function(options, event)
+					t.print(event.data)
+					assert.stub(t.print).was.called_with(event.data)
 				end,
 			},
 		})

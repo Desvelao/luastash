@@ -1,4 +1,4 @@
-local version = 'v0.1.0'
+local version = 'v0.2.0'
 
 project = 'luastash'
 description = 'Process data in a Logstash-like pipeline'

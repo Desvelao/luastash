@@ -2,7 +2,7 @@
 
 ## Description
 
-This library provides a sequential processor to transform data. It is inspired by Logstash, a data processing pipeline tool from Elasticsearch.
+This library provides a sequential processor to transform data. It is inspired by Logstash, a data processing pipeline tool from Elasticsearch, and Elasticsearch ingest pipelie.
 
 The data processing pipeline consists of three phases:
 
@@ -10,14 +10,13 @@ The data processing pipeline consists of three phases:
 2. **Filters**: Transform or filter the data.
 3. **Outputs**: Send the processed data to different destinations.
 
-
 ## Features
 
 - Retrieve data from multiple inputs using a round-robin selection.
 - Optionally transform the data using filters.
-- Output data in various ways, such as to the console, files, or by sending requests.
-- Run conditional processors by defining conditions in Lua using the `data` and context (`ctx`) variables.
-- Execute on-failure pipelines during the filters or outputs phases.
+- Output data in various destinations.
+- Run conditional processors by defining conditions in Lua using the `event` and context (`ctx`) variables.
+- Execute on-failure pipelines during the filter or output phases.
 - Skip running specific processors when needed.
 
 ## Installation
@@ -34,8 +33,16 @@ Define the inputs to retrieve the values to process.
 
 You can define multiple input sources, and the processor will emit values in a round-robin fashion from the inputs.
 
-If any input emits a nil value, the processor will consider it finished and remove it from the inputs list.
-To skip to the next input, emit the "__INPUT_CONTINUE_SIGNAL__" value.
+The input emit 2 values:
+- should continue: emit `true` to continue or `false` if the input should be removed from the input list
+- value: the raw value, if `nil` is emitted then the processor will be skipped
+
+The emitted value by the input will be used to build an event where:
+- `event.data`: the value emitted by the input
+- `event.metadata['@timestamp']`: define the date when the value was emitted
+- `event.metadata['@version']`: define the version of the event
+- `event.metadata['source']`: define the proccesor name
+- `event.metadata['source_tag']`: define an optional tag
 
 ### Filters
 
@@ -45,7 +52,7 @@ It uses the under the hood the [pipeflow](https://github.com/Desvelao/pipeflow) 
 
 ### Outputs
 
-They define the output of the transformed data such as print the result, save to file, send request to external services, etc...
+They define the destination of the processed event, for example, print to console, save to file, send request to external services, etc...
 
 It uses the under the hood the [pipeflow](https://github.com/Desvelao/pipeflow) library.
 
@@ -73,7 +80,7 @@ local pipeline = {
         },
         {
             -- Run conditionally the processor
-            ["if"] = "data > 4",
+            ["if"] = "event.data > 4",
             type='increase',
             options={
                 value=4
@@ -98,16 +105,44 @@ local pipeline = {
 -- Define processors
 local proccesors = {
     inputs = {
+        ['generate-integers-coroutine-gen'] = function (options)
+            local index = 1
+            local values = options.values
+            return coroutine.wrap(function() -- Return an iterator as coroutine generator. This is the recommended way.
+                while true do
+                    local value = values[index]
+                    coroutine.yield(value ~= nil, value) -- if the first value emitted is false, the input will be removed and the data will not processed. If the second value is nil, the data will not processed
+                    index = index + 1
+                end
+            end)
+        end,
         ['generate-integers'] = function (options)
             local index = 1
             local values = options.values
             local function next()
                 local value = values[index]
                 index = index + 1
-                return value
+                return value ~= nil, value
             end
 
             return next -- Return an iterator that is called and returns a value each time. When this returns nil, then the input will be removed of the input list.
+        end,
+        ['generate-integers-infinite-loop-coroutine-gen'] = function (options)
+
+            local index = 1
+            local values = options.values
+            return coroutine.wrap(function() -- Return an iterator as coroutine generator. This is the recommended way.
+                while true do
+                    local value = values[index]
+                    if value == nil then
+                        index = 1 -- Return to first item, in the following call this will return the first value of values
+                        coroutine.yield(true, nil)
+                    else
+                        coroutine.yield(value ~= nil, value)
+                        index = index + 1
+                    end
+                end
+            end)
         end,
         ['generate-integers-infinite-loop'] = function (options)
             local index = 1
@@ -116,25 +151,25 @@ local proccesors = {
                 local value = values[index]
                 index = index + 1
                 if value == nil then
-                    index = 1 -- Return to first item, in the following call this will return the first item
-                    return luastash.INPUT_CONTINUE_SIGNAL -- No emit value, and the generator will not be removed. 
-                    -- Both creates an infinite loop, so the generator never finished
+                    index = 1 -- Return to first item, in the following call this will return the first value of values
+                    return true, nil -- No emit value, and the generator will not be removed. Skip the process of the data
                 end
-                return value
+                return value ~= nil, value
             end
 
             return next -- Return an iterator that is called and returns a value each time. When this returns nil, then the input will be removed of the input list.
         end
     },
     filters = {
-        increase = function increase_integer(options, data)
-            return data + options.value -- Ensure to return the data despite this is not modified
+        increase = function increase_integer(options, event)
+            event.data = event.data + option.value
+            return event
         end
     },
     outputs = {
-        ['output-console'] = function(options, data)
+        ['output-console'] = function(options, event)
             print(data)
-            return data -- Ensure to return the data
+            return event -- Ensure to return the event
         end
     }
 }
@@ -168,6 +203,12 @@ docker compose -f docker-compose.dev.yml up -d
 docker compose -f docker-compose.dev.yml exec dev sh
 ```
 
+## Install depedencies
+
+```
+luarocks install --only-deps luastash-*.rockspec
+```
+
 ## Run tests
 
 ```
@@ -178,4 +219,10 @@ docker compose -f docker-compose.dev.yml exec dev sh
 
 ```
 /usr/local/bin/stylua luastash.lua spec/luastash.spec.lua
+```
+
+# Publish package
+
+```
+luarocks update luastash-*.rockspec --api-key=<API_KEY>
 ```

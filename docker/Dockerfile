@@ -66,7 +66,9 @@ RUN set -ex \
     # Clean up the ZIP file
     && rm stylua.zip \
     # Clean
-    && apk del .build-deps
+    && apk del .build-deps \
+    # Required to publish the package if using the dev container
+    && apk add zip 
 
 # Specific to script
 # ADD src/rockspec-dev.rockspec /home/app/rockspec-dev.rockspec

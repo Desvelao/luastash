@@ -1,0 +1,52 @@
+name: Publish LuaRocks package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      rockspec:
+        description: 'Rockspec file to publish'
+        required: false
+        default: '*.rockspec'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Lua and LuaRocks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 luarocks
+          luarocks install dkjson --local
+
+      - name: Resolve rockspec
+        id: rockspec
+        run: |
+          ROCKSPEC_INPUT="${{ github.event.inputs.rockspec || '*.rockspec' }}"
+          ROCKSPEC_FILE=$(ls -1 ${ROCKSPEC_INPUT} | head -n 1)
+          if [ -z "$ROCKSPEC_FILE" ]; then
+            echo "No rockspec found for pattern: ${ROCKSPEC_INPUT}"
+            exit 1
+          fi
+          echo "file=${ROCKSPEC_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to LuaRocks
+        env:
+          LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
+        run: |
+          if [ -z "$LUAROCKS_API_KEY" ]; then
+            echo "Missing LUAROCKS_API_KEY secret"
+            exit 1
+          fi
+          luarocks upload "${{ steps.rockspec.outputs.file }}" --api-key="$LUAROCKS_API_KEY"
