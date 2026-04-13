@@ -1,9 +1,7 @@
 name: Publish LuaRocks package
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
   workflow_dispatch:
     inputs:
       rockspec:

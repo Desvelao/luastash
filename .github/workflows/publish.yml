@@ -1,0 +1,22 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  format-check:
+    uses: ./.github/workflows/format-check.yml
+
+  docs:
+    needs: format-check
+    uses: ./.github/workflows/docs.yml
+
+  build-and-push:
+    needs: format-check
+    uses: ./.github/workflows/publish-luarocks.yml
