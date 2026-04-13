@@ -108,21 +108,23 @@ Event.__index = Event
 
 -- Utility: split "[a][b][c]" into {"a","b","c"}
 local function parse_path(path)
-    local parts = {}
-    for key in path:gmatch("%[([^%]]+)%]") do
-        parts[#parts + 1] = key
-    end
-    return parts
+	local parts = {}
+	for key in path:gmatch("%[([^%]]+)%]") do
+		parts[#parts + 1] = key
+	end
+	return parts
 end
 
 -- Utility: deep clone
 local function deep_copy(tbl)
-    if type(tbl) ~= "table" then return tbl end
-    local copy = {}
-    for k, v in pairs(tbl) do
-        copy[k] = deep_copy(v)
-    end
-    return copy
+	if type(tbl) ~= "table" then
+		return tbl
+	end
+	local copy = {}
+	for k, v in pairs(tbl) do
+		copy[k] = deep_copy(v)
+	end
+	return copy
 end
 
 --- Create a new Event instance.
@@ -131,16 +133,17 @@ end
 -- @tparam[opt=nil] data data Initial event data, defaults to an empty table if not provided.
 -- @treturn Event A new Event instance with the provided data and default metadata.
 function Event:new(data)
-    local instance = {
-        data = data or {},
-        metadata = {},
-    }
+	local instance = {
+		data = data or {},
+		metadata = {},
+	}
 
-    -- Logstash defaults
-    instance.metadata["@timestamp"] = type(instance.data) == "table" and instance.data["@timestamp"] or os.date("!%Y-%m-%dT%H:%M:%SZ")
-    instance.metadata["@version"] = type(instance.data) == "table" and instance.data["@version"] or "1"
+	-- Logstash defaults
+	instance.metadata["@timestamp"] = type(instance.data) == "table" and instance.data["@timestamp"]
+		or os.date("!%Y-%m-%dT%H:%M:%SZ")
+	instance.metadata["@version"] = type(instance.data) == "table" and instance.data["@version"] or "1"
 
-    return setmetatable(instance, self)
+	return setmetatable(instance, self)
 end
 
 --- Get field using "[foo][bar]" syntax. If the path does not exist, it returns nil.
@@ -149,16 +152,20 @@ end
 -- @tparam string path The field path in Logstash-style syntax (e.g., "[foo][bar]").
 -- @return The value at the specified path, or nil if the path does not exist.
 function Event:get(path)
-    local parts = parse_path(path)
-    local ref = self.data
+	local parts = parse_path(path)
+	local ref = self.data
 
-    for _, key in ipairs(parts) do
-        if type(ref) ~= "table" then return nil end
-        ref = ref[key]
-        if ref == nil then return nil end
-    end
+	for _, key in ipairs(parts) do
+		if type(ref) ~= "table" then
+			return nil
+		end
+		ref = ref[key]
+		if ref == nil then
+			return nil
+		end
+	end
 
-    return ref
+	return ref
 end
 
 --- Set field using "[foo][bar]" syntax. If intermediate tables do not exist, they will be created.
@@ -167,20 +174,19 @@ end
 -- @tparam string path The field path in Logstash-style syntax (e.g., "[foo][bar]").
 -- @param value The value to set at the specified path. If intermediate tables do not exist, they will be created.
 function Event:set(path, value)
-    local parts = parse_path(path)
-    local ref = self.data
+	local parts = parse_path(path)
+	local ref = self.data
 
-    for i = 1, #parts - 1 do
-        local key = parts[i]
-        if type(ref[key]) ~= "table" then
-            ref[key] = {}
-        end
-        ref = ref[key]
-    end
+	for i = 1, #parts - 1 do
+		local key = parts[i]
+		if type(ref[key]) ~= "table" then
+			ref[key] = {}
+		end
+		ref = ref[key]
+	end
 
-    ref[parts[#parts]] = value
+	ref[parts[#parts]] = value
 end
-
 
 --- Get metadata field.
 -- @usage
@@ -188,7 +194,7 @@ end
 -- @tparam string key The metadata key
 -- @return any The metadata value
 function Event:get_metadata(key)
-    return self.metadata[key]
+	return self.metadata[key]
 end
 
 --- Set metadata field.
@@ -198,7 +204,7 @@ end
 -- @tparam any value The metadata value
 -- @return nil
 function Event:set_metadata(key, value)
-    self.metadata[key] = value
+	self.metadata[key] = value
 end
 
 --- Clone event.
@@ -206,9 +212,9 @@ end
 -- local event2 = event:clone()
 -- @treturn Event A new event with the same data and metadata
 function Event:clone()
-    local copy = Event:new(deep_copy(self.data))
-    copy.metadata = deep_copy(self.metadata)
-    return copy
+	local copy = Event:new(deep_copy(self.data))
+	copy.metadata = deep_copy(self.metadata)
+	return copy
 end
 
 --- Serialize event to JSON.
@@ -216,7 +222,7 @@ end
 -- local json = event:to_json()
 -- @treturn string JSON representation of the event data
 function Event:to_json()
-    return dkjson.encode(self.data)
+	return dkjson.encode(self.data)
 end
 
 --- Event metadata fields. These fields provide additional information about the event and are used for processing and routing within the stash pipeline. The metadata includes standard Logstash fields such as `@timestamp` and `@version`, as well as custom fields like `source` and `source_tag` that indicate the origin of the event.
@@ -313,7 +319,7 @@ local function run_stash(config, processors, ctx, utils)
 	end
 
 	local pipeflow_options = {
-		eval_accessor_data = 'event'
+		eval_accessor_data = "event",
 	}
 
 	logger.debug("Setup input generators")
@@ -360,9 +366,9 @@ local function run_stash(config, processors, ctx, utils)
 					logger_generator.debug("Skip input due to nil value")
 				else
 					local event = Event:new(message)
-					event:set_metadata('source', generator.type)
+					event:set_metadata("source", generator.type)
 					if generator.tag then
-						event:set_metadata('source_tag', generator.tag)
+						event:set_metadata("source_tag", generator.tag)
 					end
 					logger_generator.debug("Processing data")
 					if _config.filters then
@@ -411,7 +417,13 @@ local function run_stash(config, processors, ctx, utils)
 		end
 
 		if generator_index > #generators then
-			logger.debug(string.format("Reset to the first generator due to generator index [%s] is greater than generators count [%s]", generator_index, #generators))
+			logger.debug(
+				string.format(
+					"Reset to the first generator due to generator index [%s] is greater than generators count [%s]",
+					generator_index,
+					#generators
+				)
+			)
 			generator_index = 1
 		end
 	end
@@ -419,7 +431,7 @@ local function run_stash(config, processors, ctx, utils)
 	logger.debug("Stash finished")
 end
 
---- Pipeline configuration table. 
+--- Pipeline configuration table.
 --- @table StashConfig
 --- @field inputs List of input processor configurations. Each configuration should include a `type` field that corresponds to a processor function in the `inputs` table of the `StashProcessors`.
 --- @field filters List of filter processor configurations. Each configuration should include a `type` field that corresponds to a processor function in the `filters` table of the `StashProcessors`.

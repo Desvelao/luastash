@@ -5,7 +5,7 @@ local function input_integers_co(options)
 	local values = options.values
 	return coroutine.wrap(function(t)
 		while true do
-			local value = values[index] 
+			local value = values[index]
 			coroutine.yield(value ~= nil, value)
 			index = index + 1
 		end
@@ -39,7 +39,7 @@ local function filter_manage_metadata(options, event)
 end
 
 local function filter_manage_data(options, event)
-	event:set(options.key, event:get(options.concat_prop)..options.value ) -- this is just an example of how to set a value using the setter and get another value using the getter to create a new value
+	event:set(options.key, event:get(options.concat_prop) .. options.value) -- this is just an example of how to set a value using the setter and get another value using the getter to create a new value
 	return event
 end
 
@@ -98,16 +98,19 @@ describe("Run stash", function()
 		}
 
 		stub(t, "print")
-		luastash('spec/config.sample1.json', { -- this assumes that the busted command is executed from the root of the project
-			inputs = {
-				["input-test"] = input_integers_co,
-			},
-			outputs = {
-				["output-test"] = function(options, event)
-					t.print(event.data)
-				end,
-			},
-		})
+		luastash(
+			"spec/config.sample1.json",
+			{ -- this assumes that the busted command is executed from the root of the project
+				inputs = {
+					["input-test"] = input_integers_co,
+				},
+				outputs = {
+					["output-test"] = function(options, event)
+						t.print(event.data)
+					end,
+				},
+			}
+		)
 
 		assert.stub(t.print).was.called_with(1)
 		assert.stub(t.print).was.called_with(2)
@@ -213,41 +216,43 @@ describe("Run stash", function()
 		}
 
 		stub(t, "print")
-		luastash({
-			inputs = {
-				{
-					type = "input-test",
-					options = {
-						values = { 1, 2, 3, 4, 5 },
+		luastash(
+			{
+				inputs = {
+					{
+						type = "input-test",
+						options = {
+							values = { 1, 2, 3, 4, 5 },
+						},
+					},
+				},
+				filters = {
+					{
+						type = "filter-accumulate-on-context",
+						options = {},
+					},
+				},
+				outputs = {
+					{
+						type = "output-test",
+						options = {},
 					},
 				},
 			},
-			filters = {
-				{
-					type = "filter-accumulate-on-context",
-					options = {},
+			{ -- this assumes that the busted command is executed from the root of the project
+				inputs = {
+					["input-test"] = input_integers_co,
+				},
+				filters = {
+					["filter-accumulate-on-context"] = filter_accumulate_on_context,
+				},
+				outputs = {
+					["output-test"] = function(options, event)
+						t.print(event.data)
+					end,
 				},
 			},
-			outputs = {
-				{
-					type = "output-test",
-					options = {},
-				},
-			},
-		}, { -- this assumes that the busted command is executed from the root of the project
-			inputs = {
-				["input-test"] = input_integers_co,
-			},
-			filters = {
-				["filter-accumulate-on-context"] = filter_accumulate_on_context,
-			},
-			outputs = {
-				["output-test"] = function(options, event)
-					t.print(event.data)
-				end,
-			},
-		},
-		context -- context can be passed as the third argument of the luastash function and this will be passed to the processors in the ctx parameter
+			context -- context can be passed as the third argument of the luastash function and this will be passed to the processors in the ctx parameter
 		)
 		assert.stub(t.print).was.called_with(1)
 		assert.stub(t.print).was.called_with(2)
@@ -281,7 +286,7 @@ describe("Run stash", function()
 			},
 			outputs = {
 				["output-test"] = function(options, event)
-					table.insert(events, event)					
+					table.insert(events, event)
 				end,
 			},
 		})
@@ -295,10 +300,9 @@ describe("Run stash", function()
 			assert.is_not_nil(event.metadata["@timestamp"])
 			local ts = event:get_metadata("@timestamp")
 			assert.is_truthy(ts:match("^%d%d%d%d%-%d%d%-%d%dT%d%d:%d%d:%d%dZ$"))
-			assert.are.equals('1', event:get_metadata("@version"))
-			assert.are.equals('1', event.metadata["@version"])
+			assert.are.equals("1", event:get_metadata("@version"))
+			assert.are.equals("1", event.metadata["@version"])
 		end
-		
 	end)
 
 	it("Event has custom metadata field defined with key and event.data value", function()
@@ -350,25 +354,24 @@ describe("Run stash", function()
 			assert.is_not_nil(event.metadata["@timestamp"])
 			local ts = event:get_metadata("@timestamp")
 			assert.is_truthy(ts:match("^%d%d%d%d%-%d%d%-%d%dT%d%d:%d%d:%d%dZ$"))
-			assert.are.equals('1', event:get_metadata("@version"))
-			assert.are.equals('1', event.metadata["@version"])
+			assert.are.equals("1", event:get_metadata("@version"))
+			assert.are.equals("1", event.metadata["@version"])
 			assert.are.equals(event.data, event:get_metadata("my_custom_key"))
 			assert.are.equals(event.data, event.metadata.my_custom_key)
 		end
-
 	end)
 
 	it("Filter define data using the setter and assert using the getter", function()
 		local events = {}
-		local key1 = '[my_custom_key][subkey]'
-		local key2 = '[my_custom_key2][subkey][sub.key2]'
+		local key1 = "[my_custom_key][subkey]"
+		local key2 = "[my_custom_key2][subkey][sub.key2]"
 		luastash({
 			inputs = {
 				{
 					type = "input-test",
 					tag = "my_tag",
 					options = {
-						values = { {prop = "test"}, {prop = "test2"} },
+						values = { { prop = "test" }, { prop = "test2" } },
 					},
 				},
 			},
@@ -378,7 +381,7 @@ describe("Run stash", function()
 					options = {
 						key = key1,
 						value = "value",
-						concat_prop = '[prop]',
+						concat_prop = "[prop]",
 						-- this is just an example of how to set a value using the setter and get
 					},
 				},
@@ -387,7 +390,7 @@ describe("Run stash", function()
 					options = {
 						key = key2,
 						value = "other_value",
-						concat_prop = '[my_custom_key][subkey]',
+						concat_prop = "[my_custom_key][subkey]",
 						-- this is just an example of how to set a value using the setter and get
 					},
 				},
@@ -413,10 +416,10 @@ describe("Run stash", function()
 		})
 		-- TODO: assert the event.data has tables in the defined keys
 		assert.are.equals("testvalue", events[1]:get(key1))
-		assert.are.equals("test", events[1]:get('[prop]'))
+		assert.are.equals("test", events[1]:get("[prop]"))
 		assert.are.equals("testvalueother_value", events[1]:get(key2))
 		assert.are.equals("test2value", events[2]:get(key1))
-		assert.are.equals("test2", events[2]:get('[prop]'))
+		assert.are.equals("test2", events[2]:get("[prop]"))
 		assert.are.equals("test2valueother_value", events[2]:get(key2))
 	end)
 
@@ -476,7 +479,6 @@ describe("Run stash", function()
 	end)
 
 	it("Inputs sequence (last removed) of processed event with generators that are removed", function()
-
 		local input_calls_gen = {}
 
 		local function input_integers_no_emit_from_index(options)
@@ -485,7 +487,7 @@ describe("Run stash", function()
 			local continue_generator = 0
 			local function test()
 				local value = values[index]
-				table.insert(input_calls_gen, {tag = options.tag, index = index, value = value})
+				table.insert(input_calls_gen, { tag = options.tag, index = index, value = value })
 				if index >= options.no_emit_from_index then
 					return false, nil -- stop the input run, and the data process will be skipped
 				end
@@ -513,7 +515,7 @@ describe("Run stash", function()
 						no_emit_from_index = 3,
 						tag = "input2",
 					},
-				}
+				},
 			},
 			outputs = {
 				{
@@ -526,8 +528,7 @@ describe("Run stash", function()
 				["input-test"] = input_integers_no_emit_from_index,
 			},
 			outputs = {
-				["output-test"] = function(options, event)
-				end,
+				["output-test"] = function(options, event) end,
 			},
 		})
 
@@ -554,94 +555,95 @@ describe("Run stash", function()
 		assert.are.equals(4, input_calls_gen[7].value)
 	end)
 
-	it("Inputs sequence (second-to-last removed before last) of processed event with generators that are removed", function()
+	it(
+		"Inputs sequence (second-to-last removed before last) of processed event with generators that are removed",
+		function()
+			local input_calls_gen = {}
 
-		local input_calls_gen = {}
-
-		local function input_integers_no_emit_from_index(options)
-			local index = 1
-			local values = options.values
-			local continue_generator = 0
-			local function test()
-				if index >= options.no_emit_from_index then
-					return false, nil -- stop the input run, and the data process will be skipped
+			local function input_integers_no_emit_from_index(options)
+				local index = 1
+				local values = options.values
+				local continue_generator = 0
+				local function test()
+					if index >= options.no_emit_from_index then
+						return false, nil -- stop the input run, and the data process will be skipped
+					end
+					local value = values[index]
+					index = index + 1
+					return value ~= nil, value
 				end
-				local value = values[index]
-				index = index + 1
-				return value ~= nil, value
+
+				return test
 			end
 
-			return test
+			luastash({
+				inputs = {
+					{
+						type = "input-test",
+						tag = "input1",
+						options = {
+							values = { 1, 2, 3, 4, 5 },
+							no_emit_from_index = 5,
+						},
+					},
+					{
+						type = "input-test",
+						tag = "input2",
+						options = {
+							values = { 10, 20, 30, 40, 50 },
+							no_emit_from_index = 3,
+						},
+					},
+					{
+						type = "input-test",
+						tag = "input3",
+						options = {
+							values = { 100, 200, 300, 400, 500, 600, 700 },
+							no_emit_from_index = 7,
+						},
+					},
+				},
+				outputs = {
+					{
+						type = "output-test",
+						options = {},
+					},
+				},
+			}, {
+				inputs = {
+					["input-test"] = input_integers_no_emit_from_index,
+				},
+				outputs = {
+					["output-test"] = function(options, event)
+						table.insert(input_calls_gen, { tag = event.metadata.source_tag, value = event.data })
+					end,
+				},
+			})
+
+			assert.are.equals("input1", input_calls_gen[1].tag)
+			assert.are.equals(1, input_calls_gen[1].value)
+			assert.are.equals("input2", input_calls_gen[2].tag)
+			assert.are.equals(10, input_calls_gen[2].value)
+			assert.are.equals("input3", input_calls_gen[3].tag)
+			assert.are.equals(100, input_calls_gen[3].value)
+			assert.are.equals("input1", input_calls_gen[4].tag)
+			assert.are.equals(2, input_calls_gen[4].value)
+			assert.are.equals("input2", input_calls_gen[5].tag)
+			assert.are.equals(20, input_calls_gen[5].value)
+			assert.are.equals("input3", input_calls_gen[6].tag)
+			assert.are.equals(200, input_calls_gen[6].value)
+			assert.are.equals("input1", input_calls_gen[7].tag)
+			assert.are.equals(3, input_calls_gen[7].value)
+			assert.are.equals("input3", input_calls_gen[8].tag)
+			assert.are.equals(300, input_calls_gen[8].value)
+			assert.are.equals("input1", input_calls_gen[9].tag)
+			assert.are.equals(4, input_calls_gen[9].value)
+			assert.are.equals("input3", input_calls_gen[10].tag)
+			assert.are.equals(400, input_calls_gen[10].value)
+			assert.are.equals("input3", input_calls_gen[11].tag)
+			assert.are.equals(500, input_calls_gen[11].value)
+			assert.are.equals("input3", input_calls_gen[12].tag)
+			assert.are.equals(600, input_calls_gen[12].value)
 		end
-
-		luastash({
-			inputs = {
-				{
-					type = "input-test",
-					tag = "input1",
-					options = {
-						values = { 1, 2, 3, 4, 5 },
-						no_emit_from_index = 5,
-					},
-				},
-				{
-					type = "input-test",
-					tag = "input2",
-					options = {
-						values = { 10, 20, 30, 40, 50 },
-						no_emit_from_index = 3,
-					},
-				},
-				{
-					type = "input-test",
-					tag = "input3",
-					options = {
-						values = { 100, 200, 300, 400, 500, 600, 700 },
-						no_emit_from_index = 7,
-					},
-				}
-			},
-			outputs = {
-				{
-					type = "output-test",
-					options = {},
-				},
-			},
-		}, {
-			inputs = {
-				["input-test"] = input_integers_no_emit_from_index,
-			},
-			outputs = {
-				["output-test"] = function(options, event)
-					table.insert(input_calls_gen, {tag = event.metadata.source_tag, value = event.data})
-				end,
-			},
-		})
-
-		assert.are.equals("input1", input_calls_gen[1].tag)
-		assert.are.equals(1, input_calls_gen[1].value)
-		assert.are.equals("input2", input_calls_gen[2].tag)
-		assert.are.equals(10, input_calls_gen[2].value)
-		assert.are.equals("input3", input_calls_gen[3].tag)
-		assert.are.equals(100, input_calls_gen[3].value)
-		assert.are.equals("input1", input_calls_gen[4].tag)
-		assert.are.equals(2, input_calls_gen[4].value)
-		assert.are.equals("input2", input_calls_gen[5].tag)
-		assert.are.equals(20, input_calls_gen[5].value)
-		assert.are.equals("input3", input_calls_gen[6].tag)
-		assert.are.equals(200, input_calls_gen[6].value)
-		assert.are.equals("input1", input_calls_gen[7].tag)
-		assert.are.equals(3, input_calls_gen[7].value)
-		assert.are.equals("input3", input_calls_gen[8].tag)
-		assert.are.equals(300, input_calls_gen[8].value)
-		assert.are.equals("input1", input_calls_gen[9].tag)
-		assert.are.equals(4, input_calls_gen[9].value)
-		assert.are.equals("input3", input_calls_gen[10].tag)
-		assert.are.equals(400, input_calls_gen[10].value)
-		assert.are.equals("input3", input_calls_gen[11].tag)
-		assert.are.equals(500, input_calls_gen[11].value)
-		assert.are.equals("input3", input_calls_gen[12].tag)
-		assert.are.equals(600, input_calls_gen[12].value)
-		
-	end)
+	)
 end)
