@@ -30,8 +30,10 @@
 
 <h2>Contents</h2>
 <ul>
-<li><a href="#Functions">Functions</a></li>
-<li><a href="#Tables">Tables</a></li>
+<li><a href="#Class_Logger">Class Logger </a></li>
+<li><a href="#Class_Event">Class Event </a></li>
+<li><a href="#Run_Stash">Run Stash </a></li>
+<li><a href="#Module_export">Module export </a></li>
 </ul>
 
 
@@ -50,30 +52,100 @@
 
 <h1>Module <code>luastash</code></h1>
 <p>LuaStash Module
- This module provides functionality to process data through a pipeline of generators and outputs.</p>
+ This module provides functionality to process data through a pipeline of generators, filters,and outputs.</p>
 <p> It includes logging and error handling mechanisms.</p>
 
 
-<h2><a href="#Functions">Functions</a></h2>
+<h2><a href="#Class_Logger">Class Logger </a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#__call">__call (config, processors, ctx, utils)</a></td>
-	<td class="summary">Runs the stash pipeline.</td>
+	<td class="name" nowrap><a href="#Logger:new">Logger:new (options)</a></td>
+	<td class="summary">Create a new Logger instance.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#create_logger">create_logger (options)</a></td>
-	<td class="summary">Creates a new logger instance.</td>
+	<td class="name" nowrap><a href="#Logger:set_level">Logger:set_level (level)</a></td>
+	<td class="summary">Set the logging level for the logger instance.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Logger:disable">Logger:disable ()</a></td>
+	<td class="summary">Disable logging for this logger instance.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Logger:enable">Logger:enable ()</a></td>
+	<td class="summary">Enable logging for this logger instance.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Logger:get_logger">Logger:get_logger (options)</a></td>
+	<td class="summary">Create a child logger with specific options.</td>
 	</tr>
 </table>
-<h2><a href="#Tables">Tables</a></h2>
+<h2><a href="#Class_Event">Class Event </a></h2>
 <table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Event:new">Event:new ([data=nil])</a></td>
+	<td class="summary">Create a new Event instance.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Event:get">Event:get (path)</a></td>
+	<td class="summary">Get field using "[foo][bar]" syntax.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Event:set">Event:set (path, value)</a></td>
+	<td class="summary">Set field using "[foo][bar]" syntax.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Event:get_metadata">Event:get_metadata (key)</a></td>
+	<td class="summary">Get metadata field.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Event:set_metadata">Event:set_metadata (key, value)</a></td>
+	<td class="summary">Set metadata field.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Event:clone">Event:clone ()</a></td>
+	<td class="summary">Clone event.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Event:to_json">Event:to_json ()</a></td>
+	<td class="summary">Serialize event to JSON.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#event.metadata">event.metadata</a></td>
+	<td class="summary">Event metadata fields.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#event.data">event.data</a></td>
+	<td class="summary">Event data fields.</td>
+	</tr>
+</table>
+<h2><a href="#Run_Stash">Run Stash </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#StashConfig">StashConfig</a></td>
+	<td class="summary">Pipeline configuration table.</td>
+	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#StashProcessors">StashProcessors</a></td>
 	<td class="summary">Define the inputs, filters and outputs processors.</td>
 	</tr>
+</table>
+<h2><a href="#Module_export">Module export </a></h2>
+<table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#Stash">Stash</a></td>
-	<td class="summary">A metatable that provides callable and indexable behavior.</td>
+	<td class="name" nowrap><a href="#Logger">Logger</a></td>
+	<td class="summary">Logger instance.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Event">Event</a></td>
+	<td class="summary">Event instance.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#_VERSION">_VERSION</a></td>
+	<td class="summary">Version of the LuaStash module.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#call">call (config, processors[, context=nil[, utils=nil]])</a></td>
+	<td class="summary">Runs the stash pipeline.</td>
 	</tr>
 </table>
 
@@ -81,35 +153,290 @@
 <br/>
 
 
-    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+    <h2 class="section-header has-description"><a name="Class_Logger"></a>Class Logger </h2>
 
+          <div class="section-description">
+          Logger class for logging messages with different levels (debug, info, warn, error).  It supports enabling/disabling logging and creating child loggers with specific names and levels.
+          </div>
     <dl class="function">
     <dt>
-    <a name = "__call"></a>
-    <strong>__call (config, processors, ctx, utils)</strong>
+    <a name = "Logger:new"></a>
+    <strong>Logger:new (options)</strong>
     </dt>
     <dd>
-    Runs the stash pipeline.
- This function processes data through a series of generators, filters and outputs.
+    Create a new Logger instance.
 
 
     <h3>Parameters:</h3>
     <ul>
-        <li><span class="parameter">config</span>
-            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
-         Pipeline configuration or file path
+        <li><span class="parameter">options</span> A table of options to configure the logger.
+        <ul>
+        <li><span class="parameter">name</span>
+         The name of the logger.
+         (<em>default</em> '')
         </li>
-        <li><span class="parameter">processors</span>
-            <span class="types"><a class="type" href="index.html#StashProcessors">StashProcessors</a></span>
-         Inputs, filters and outputs processors
+        <li><span class="parameter">level</span>
+         The logging level (debug, info, warn, error).
+         (<em>default</em> 'info')
         </li>
-        <li><span class="parameter">ctx</span>
-            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
-         Context object passed to processors
+        <li><span class="parameter">enabled</span>
+         Whether the logger is enabled.
+         (<em>default</em> true)
         </li>
-        <li><span class="parameter">utils</span>
-            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
-         Utility functions and logger
+        </li></ul>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="index.html#Logger">Logger</a></span>
+        A new <a href="index.html#Logger">Logger</a> instance configured with the provided options.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Logger:set_level"></a>
+    <strong>Logger:set_level (level)</strong>
+    </dt>
+    <dd>
+    Set the logging level for the logger instance.  The level can be one of "debug", "info", "warn", or "error". If an invalid level is provided, an error will be raised.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">level</span>
+         The logging level to set (debug, info, warn, error).
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Logger:disable"></a>
+    <strong>Logger:disable ()</strong>
+    </dt>
+    <dd>
+    Disable logging for this logger instance.  When disabled, no log messages will be printed regardless of the logging level.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        nil
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Logger:enable"></a>
+    <strong>Logger:enable ()</strong>
+    </dt>
+    <dd>
+    Enable logging for this logger instance.  When enabled, log messages will be printed according to the configured logging level.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        nil
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Logger:get_logger"></a>
+    <strong>Logger:get_logger (options)</strong>
+    </dt>
+    <dd>
+    Create a child logger with specific options.  The child logger will inherit the logging level and enabled state from the parent logger unless overridden in the options. The name of the child logger will be a combination of the parent logger's name and the provided name in the options.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">options</span> A table of options to configure the child logger.
+        <ul>
+        <li><span class="parameter">name</span>
+         The name of the child logger, which will be combined with the parent logger's name.
+         (<em>default</em> '')
+        </li>
+        <li><span class="parameter">level</span>
+         The logging level for the child logger. If not provided, it will inherit the parent's logging level.
+         (<em>default</em> '')
+        </li>
+        <li><span class="parameter">enabled</span>
+         Whether the child logger is enabled. If not provided, it will inherit the parent's enabled state.
+         (<em>default</em> true)
+        </li>
+        </li></ul>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="index.html#Logger">Logger</a></span>
+        A new <a href="index.html#Logger">Logger</a> instance configured with the provided options and inheriting from the parent logger.
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_Event"></a>Class Event </h2>
+
+          <div class="section-description">
+          Event class representing a data event in the pipeline.  It provides methods to get and set fields using Logstash-style paths, manage metadata, clone events, and serialize to JSON.
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "Event:new"></a>
+    <strong>Event:new ([data=nil])</strong>
+    </dt>
+    <dd>
+    Create a new Event instance.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">data</span>
+            <span class="types"><a class="type" href="index.html#event.data">data</a></span>
+         Initial event data, defaults to an empty table if not provided.
+         (<em>default</em> nil)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="index.html#Event">Event</a></span>
+        A new Event instance with the provided data and default metadata.
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> event = Event:<span class="function-name">new</span>({foo = <span class="string">"bar"</span>})</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "Event:get"></a>
+    <strong>Event:get (path)</strong>
+    </dt>
+    <dd>
+    Get field using "[foo][bar]" syntax.  If the path does not exist, it returns nil.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">path</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The field path in Logstash-style syntax (e.g., "[foo][bar]").
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        The value at the specified path, or nil if the path does not exist.
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> value = event:<span class="function-name">get</span>(<span class="string">"[foo][bar]"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "Event:set"></a>
+    <strong>Event:set (path, value)</strong>
+    </dt>
+    <dd>
+    Set field using "[foo][bar]" syntax.  If intermediate tables do not exist, they will be created.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">path</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The field path in Logstash-style syntax (e.g., "[foo][bar]").
+        </li>
+        <li><span class="parameter">value</span>
+         The value to set at the specified path. If intermediate tables do not exist, they will be created.
+        </li>
+    </ul>
+
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">event:<span class="function-name">set</span>(<span class="string">"[foo][bar]"</span>, <span class="string">"value"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "Event:get_metadata"></a>
+    <strong>Event:get_metadata (key)</strong>
+    </dt>
+    <dd>
+    Get metadata field.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">key</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The metadata key
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        any The metadata value
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> value = event:<span class="function-name">get_metadata</span>(<span class="string">"key"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "Event:set_metadata"></a>
+    <strong>Event:set_metadata (key, value)</strong>
+    </dt>
+    <dd>
+    Set metadata field.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">key</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The metadata key
+        </li>
+        <li><span class="parameter">value</span>
+            <span class="types"><span class="type">any</span></span>
+         The metadata value
         </li>
     </ul>
 
@@ -123,45 +450,154 @@
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"><span class="keyword">local</span> luastash = <span class="global">require</span>(<span class="string">"luastash"</span>)
-<span class="function-name">luastash</span>(config, processors, ctx, utils)</pre>
+        <pre class="example">event:<span class="function-name">set_metadata</span>(<span class="string">"key"</span>, <span class="string">"value"</span>)</pre>
     </ul>
 
 </dd>
     <dt>
-    <a name = "create_logger"></a>
-    <strong>create_logger (options)</strong>
+    <a name = "Event:clone"></a>
+    <strong>Event:clone ()</strong>
     </dt>
     <dd>
-    Creates a new logger instance.
+    Clone event.
 
 
-    <h3>Parameters:</h3>
-    <ul>
-        <li><span class="parameter">options</span>
-         A table of options to configure the logger.
-        </li>
-    </ul>
 
     <h3>Returns:</h3>
     <ol>
 
-        A new <code>Logger</code> instance.
+           <span class="types"><a class="type" href="index.html#Event">Event</a></span>
+        A new event with the same data and metadata
     </ol>
 
 
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"><span class="keyword">local</span> luastash = <span class="global">require</span>(<span class="string">"luastash"</span>)
-<span class="keyword">local</span> logger = luastash.<span class="function-name">create_logger</span>({name=<span class="string">"mylogger"</span>, level=<span class="string">"debug"</span>})</pre>
+        <pre class="example"><span class="keyword">local</span> event2 = event:<span class="function-name">clone</span>()</pre>
     </ul>
 
 </dd>
+    <dt>
+    <a name = "Event:to_json"></a>
+    <strong>Event:to_json ()</strong>
+    </dt>
+    <dd>
+    Serialize event to JSON.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        JSON representation of the event data
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> json = event:<span class="function-name">to_json</span>()</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "event.metadata"></a>
+    <strong>event.metadata</strong>
+    </dt>
+    <dd>
+    Event metadata fields.  These fields provide additional information about the event and are used for processing and routing within the stash pipeline. The metadata includes standard Logstash fields such as <code>@timestamp</code> and <code>@version</code>, as well as custom fields like <code>source</code> and <code>source_tag</code> that indicate the origin of the event.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">timestamp</span>
+         The timestamp of the event, defaulting to the current time in ISO 8601 format if not provided in the initial data.
+        </li>
+        <li><span class="parameter">version</span>
+         The version of the event, defaulting to "1" if not provided in the initial data.
+        </li>
+        <li><span class="parameter">source</span>
+         The input type of the event.
+        </li>
+        <li><span class="parameter">source_tag</span>
+         The tag of the input if provided in the configuration.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "event.data"></a>
+    <strong>event.data</strong>
+    </dt>
+    <dd>
+    Event data fields.  These fields contain the actual data of the event that is processed through the stash pipeline. The data can be structured in a nested manner, and fields can be accessed and modified using Logstash-style paths (e.g., "[foo][bar]").
+
+
+    <ul>
+        <li><span class="parameter">data</span>
+         The main data table of the event, which can contain any structured data relevant to the event being processed.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
 </dl>
-    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+    <h2 class="section-header "><a name="Run_Stash"></a>Run Stash </h2>
 
     <dl class="function">
+    <dt>
+    <a name = "StashConfig"></a>
+    <strong>StashConfig</strong>
+    </dt>
+    <dd>
+    Pipeline configuration table.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">inputs</span>
+         List of input processor configurations. Each configuration should include a <a href="https://www.lua.org/manual/5.1/manual.html#pdf-type">type</a> field that corresponds to a processor function in the <code>inputs</code> table of the <a href="index.html#StashProcessors">StashProcessors</a>.
+        </li>
+        <li><span class="parameter">filters</span>
+         List of filter processor configurations. Each configuration should include a <a href="https://www.lua.org/manual/5.1/manual.html#pdf-type">type</a> field that corresponds to a processor function in the <code>filters</code> table of the <a href="index.html#StashProcessors">StashProcessors</a>.
+        </li>
+        <li><span class="parameter">outputs</span>
+         List of output processor configurations. Each configuration should include a <a href="https://www.lua.org/manual/5.1/manual.html#pdf-type">type</a> field that corresponds to a processor function in the <code>outputs</code> table of the <a href="index.html#StashProcessors">StashProcessors</a>.
+        </li>
+    </ul>
+
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> config = {
+    inputs = {
+        { <span class="global">type</span> = <span class="string">"input_type_1"</span>, options = { ... } },
+        { <span class="global">type</span> = <span class="string">"input_type_2"</span>, options = { ... } },
+    },
+    filters = {
+        { <span class="global">type</span> = <span class="string">"filter_type_1"</span>, options = { ... } },
+        { <span class="global">type</span> = <span class="string">"filter_type_2"</span>, options = { ... } },
+    },
+    outputs = {
+        { <span class="global">type</span> = <span class="string">"output_type_1"</span>, options = { ... } },
+        { <span class="global">type</span> = <span class="string">"output_type_2"</span>, options = { ... } },
+    },
+    options = { ... },
+}</pre>
+    </ul>
+
+</dd>
     <dt>
     <a name = "StashProcessors"></a>
     <strong>StashProcessors</strong>
@@ -189,28 +625,113 @@
 
 
 </dd>
+</dl>
+    <h2 class="section-header "><a name="Module_export"></a>Module export </h2>
+
+    <dl class="function">
     <dt>
-    <a name = "Stash"></a>
-    <strong>Stash</strong>
+    <a name = "Logger"></a>
+    <strong>Logger</strong>
     </dt>
     <dd>
-    A metatable that provides callable and indexable behavior.
- This table allows calling <code>run_stash</code> directly and provides a method to create a logger.
+    Logger instance.
 
 
-    <h3>Fields:</h3>
     <ul>
-        <li><span class="parameter">__call</span>
-         Calls the <code>run_stash</code> function with the provided arguments.
-        </li>
-        <li><span class="parameter">__index</span>
-         Contains utility methods, such as <a href="index.html#create_logger">create_logger</a> and <code>version</code>.
+        <li><span class="parameter">Logger</span>
+         Provide a logger constructor.
         </li>
     </ul>
 
 
 
 
+
+</dd>
+    <dt>
+    <a name = "Event"></a>
+    <strong>Event</strong>
+    </dt>
+    <dd>
+    Event instance.
+
+
+    <ul>
+        <li><span class="parameter">Event</span>
+         Provide an event constructor.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "_VERSION"></a>
+    <strong>_VERSION</strong>
+    </dt>
+    <dd>
+    Version of the LuaStash module.
+
+
+    <ul>
+        <li><span class="parameter">_VERSION</span>
+         Define the module version.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "call"></a>
+    <strong>call (config, processors[, context=nil[, utils=nil]])</strong>
+    </dt>
+    <dd>
+    Runs the stash pipeline.
+ This function processes data through a series of generators, filters and outputs.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">config</span>
+            <span class="types"><span class="type">StashPipelineConfig</span> or <a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         Pipeline configuration table or file path
+        </li>
+        <li><span class="parameter">processors</span>
+            <span class="types"><a class="type" href="index.html#StashProcessors">StashProcessors</a></span>
+         Inputs, filters and outputs processors
+        </li>
+        <li><span class="parameter">context</span>
+            <span class="types"><span class="type">any</span></span>
+         Context object passed to processors
+         (<em>default</em> nil)
+        </li>
+        <li><span class="parameter">utils</span> Utility functions and logger
+        <ul>
+        <li><span class="parameter">logger</span>
+         Logger instance for logging within processors
+         (<em>default</em> nil)
+        </li>
+        </li></ul>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        nil
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> luastash = <span class="global">require</span>(<span class="string">"luastash"</span>)
+<span class="function-name">luastash</span>(config, processors, ctx, utils)</pre>
+    </ul>
 
 </dd>
 </dl>
@@ -220,7 +741,7 @@
 </div> <!-- id="main" -->
 <div id="about">
 <i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
-<i style="float:right;">Last updated 2026-04-10 18:21:21 </i>
+<i style="float:right;">Last updated 2026-04-13 16:05:11 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
