@@ -174,15 +174,25 @@ local proccesors = {
     }
 }
 
+-- Basic usage
+-- Pipeline and processors can be defined in Lua tables
 luastash(
     pipeline,
     processors,
-    -- optionally the logger can be passed or this will use the built-in logger instead
 )
 
+-- Basic usage: file pipeline definition
 luastash(
     'pipeline.json', -- the pipeline can be defined in a JSON file
     processors,
+)
+
+-- Advanced usage: file pipeline definition with context and custom logger
+luastash(
+    'pipeline.json',
+    processors,
+    {str='context string', number=42}, -- context is an optional table that is passed to the processors and can be used to share data between them or evaluate conditions in the processors (using the `ctx` variable in the condition)
+    {logger = luastash.Logger:new({ name = "my-pipeline", level = "info" })} -- provide a logger to the processors (optional, if not provided a default logger with debug will be used)
 )
 
 ```
